@@ -100,6 +100,8 @@ pub enum Target {
     TileTest(String),
     TileRemove(String),
     TileEditor,
+    AppBackground,
+    ClearAppBackground,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -235,6 +237,7 @@ pub struct State {
     pub pointer: bool,
     pub pressed: Option<Target>,
     pub previous_background: Option<(String, Instant)>,
+    pub displayed_background: String,
     pub background_fade: f32,
     pub wallpapers: Vec<crate::wallpapers::Wallpaper>,
     pub deleting_wallpaper: Option<String>,
@@ -252,6 +255,7 @@ pub struct State {
 
 impl State {
     pub fn new(preferences: Preferences) -> Self {
+        let displayed_background = preferences.background.clone();
         Self {
             page: Page::Home,
             focus: Target::Nav(0),
@@ -279,6 +283,7 @@ impl State {
             pointer: false,
             pressed: None,
             previous_background: None,
+            displayed_background,
             background_fade: BACKGROUND_FADE,
             wallpapers: vec![],
             deleting_wallpaper: None,
@@ -371,6 +376,21 @@ impl State {
     }
 
     pub fn tick(&mut self) {
+        let background = self.console_background().to_owned();
+        if background != self.displayed_background {
+            if self.preferences.console.enabled
+                && !self.preferences.reduced_motion
+                && self.previous_background.is_none()
+            {
+                self.previous_background =
+                    Some((self.displayed_background.clone(), Instant::now()));
+                self.background_fade = BACKGROUND_FADE;
+            } else if self.preferences.reduced_motion {
+                self.previous_background = None;
+            }
+            self.displayed_background = background;
+            self.dirty = true;
+        }
         let recents_open = self.recents_open();
         if recents_open || self.recents.visibility > 0. {
             self.dirty |= self.recents.animate(
@@ -420,6 +440,28 @@ impl State {
             Page::Apps => 1,
             Page::Settings => 2,
         }
+    }
+
+    /// Resolve only catalog entries. A removed upload safely falls back to the global wallpaper.
+    pub fn console_background(&self) -> &str {
+        if self.page == Page::Home
+            && self.preferences.console.enabled
+            && self.preferences.console.app_backgrounds
+        {
+            let app = match &self.overlay {
+                Some(Overlay::Options { id, .. }) => Some(id),
+                _ => match &self.focus {
+                    Target::App(id) => Some(id),
+                    _ => None,
+                },
+            };
+            if let Some(id) = app.and_then(|id| self.preferences.console.backgrounds.get(id))
+                && self.background_ids().any(|known| known == id)
+            {
+                return id;
+            }
+        }
+        &self.preferences.background
     }
 
     pub fn animating(&self) -> bool {
@@ -2167,6 +2209,20 @@ impl State {
             }
             Target::Setting(index) => {
                 match index {
+                    10 => self.preferences.console.enabled = !self.preferences.console.enabled,
+                    11 => {
+                        self.preferences.console.accent =
+                            (self.preferences.console.accent + 1) % crate::console::ACCENTS.len()
+                    }
+                    12 => {
+                        self.preferences.console.square_corners =
+                            !self.preferences.console.square_corners
+                    }
+                    13 => self.preferences.console.dim = (self.preferences.console.dim + 10) % 70,
+                    14 => {
+                        self.preferences.console.app_backgrounds =
+                            !self.preferences.console.app_backgrounds
+                    }
                     0 => {
                         self.subpage = Some(Subpage::AppNames);
                         self.focus = Target::AppNamesHome;
@@ -2210,6 +2266,22 @@ impl State {
             }
             Target::Background(_) => {
                 self.options();
+            }
+            Target::AppBackground | Target::ClearAppBackground => {
+                if let Some(Overlay::Options { id, .. }) = self.overlay.clone() {
+                    if self.focus == Target::AppBackground {
+                        self.preferences
+                            .console
+                            .backgrounds
+                            .insert(id, self.preferences.background.clone());
+                        self.notify("Background assigned to this app");
+                    } else {
+                        self.preferences.console.backgrounds.remove(&id);
+                        self.notify("App background cleared");
+                    }
+                    self.back();
+                    return vec![Effect::Save];
+                }
             }
             Target::WallpaperCycle => {
                 self.preferences.wallpaper_cycle = !self.preferences.wallpaper_cycle;

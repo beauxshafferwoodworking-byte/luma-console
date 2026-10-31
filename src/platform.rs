@@ -11,7 +11,7 @@ use std::{collections::HashSet, sync::mpsc, thread};
 #[path = "platform-install.rs"]
 mod installation;
 
-pub const APP_ID: &str = "com.ecklf.luma";
+pub const APP_ID: &str = "com.beaux.lumaconsole";
 pub const HOME_ID: &str = "com.webos.app.home";
 pub const FULL_HOME_ID: &str = "com.webos.app.fullhome";
 
@@ -67,7 +67,7 @@ pub fn runs_as_lg_home() -> bool {
     not(all(feature = "webos", target_os = "linux", target_arch = "arm")),
     allow(dead_code)
 )]
-pub const HOME_LIFECYCLE_OFF: &str = "/var/lib/luma-home/no-lifecycle";
+pub const HOME_LIFECYCLE_OFF: &str = "/var/lib/luma-console-home/no-lifecycle";
 
 /// Whether a relaunch actually brought a staged Home (webOS 10/11) to the front. Only the
 /// compositor's focus or remote input counts: SDL_ShowWindow emits Shown by itself, so Shown
@@ -155,13 +155,13 @@ pub fn redirect_to_home() -> Result<bool, String> {
     // A normal tile launch then opens that same instance instead of starting
     // a second renderer writing the same preferences.
     let marked = |file| std::fs::read_to_string(file).is_ok_and(|marker| marker.trim() == APP_ID);
-    if marked("/usr/palm/applications/com.webos.app.home/.luma-home")
-        || marked("/var/run/luma-home")
+    if marked("/usr/palm/applications/com.webos.app.home/.luma-console-home")
+        || marked("/var/run/luma-console-home")
     {
         thread::spawn(|| {
             call(
                 "luna://com.webos.applicationManager/launch",
-                json!({"id": std::fs::read_to_string("/var/run/luma-home-target").ok()
+                json!({"id": std::fs::read_to_string("/var/run/luma-console-home-target").ok()
                     .filter(|id| is_home_id(id.trim())).map(|id| id.trim().to_owned()).unwrap_or_else(|| HOME_ID.into())}),
             )
         })
@@ -406,7 +406,7 @@ pub fn start_update(
 ) -> Result<(), String> {
     let directory = install_dir()?;
     let command = format!(
-        "systemd-run --unit=luma-update-{} --collect /bin/sh -c {} self-update {} {} {} {} {}",
+        "systemd-run --unit=luma-console-update-{} --collect /bin/sh -c {} self-update {} {} {} {} {}",
         attempt,
         update_argument(include_str!("../tv/self-update.sh")),
         update_argument(&ipk.to_string_lossy()),
@@ -450,7 +450,7 @@ pub fn update_result_for(
     let envelope = call(
         "luna://org.webosbrew.hbchannel.service/exec",
         json!({
-            "command": format!("cat /var/lib/luma-update/{file} 2>/dev/null || true")
+            "command": format!("cat /var/lib/luma-console-update/{file} 2>/dev/null || true")
         }),
     )?;
     let output = envelope
@@ -507,6 +507,7 @@ pub fn can_uninstall(id: &str) -> bool {
         && !matches!(
             id,
             APP_ID
+                | "com.ecklf.luma"
                 | HOME_ID
                 | "com.luma.native"
                 | "com.luma.launcher"

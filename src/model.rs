@@ -215,6 +215,7 @@ impl DateFormat {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Preferences {
+    pub console: crate::console::Appearance,
     pub favorites: Option<Vec<String>>,
     pub custom_tiles: Vec<CustomTile>,
     pub hidden: Vec<String>,
@@ -256,6 +257,7 @@ pub struct Preferences {
 impl Default for Preferences {
     fn default() -> Self {
         Self {
+            console: crate::console::Appearance::default(),
             favorites: None,
             custom_tiles: vec![],
             hidden: vec![],
@@ -295,17 +297,25 @@ impl Preferences {
     pub fn favorites(&self, apps: &[App]) -> Vec<String> {
         self.favorites.clone().unwrap_or_else(|| {
             let mut ids = Vec::new();
-            for brand in [
-                "netflix",
-                "youtube",
-                "apple-tv",
-                "disney-plus",
-                "prime-video",
-                "live-tv",
-            ] {
-                if let Some(app) = apps.iter().find(|app| app.brand == brand) {
+            let preferred: &[&str] = if self.console.enabled {
+                &["plex", "disney-plus", "crunchyroll", "apple-tv"]
+            } else {
+                &[
+                    "netflix",
+                    "youtube",
+                    "apple-tv",
+                    "disney-plus",
+                    "prime-video",
+                    "live-tv",
+                ]
+            };
+            for brand in preferred {
+                if let Some(app) = apps.iter().find(|app| app.brand == *brand) {
                     ids.push(app.id.clone());
                 }
+            }
+            if self.console.enabled && !ids.is_empty() {
+                return ids;
             }
             for app in apps {
                 if ids.len() >= 6 {
@@ -376,6 +386,7 @@ impl Preferences {
     }
 
     pub fn sanitize(&mut self) {
+        self.console.sanitize();
         if self.splash_background.as_ref().is_some_and(|id| {
             !BACKGROUNDS.iter().any(|(known, _)| *known == id) && !crate::wallpapers::valid_id(id)
         }) {

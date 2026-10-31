@@ -1,0 +1,35 @@
+{
+  "status": "Draft source; no compiled TV package",
+  "checks": [
+    {
+      "name": "Rust parsing and formatting",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "name": "Tooling and documentation formatting",
+      "exit_code": 0,
+      "output": "Checking formatting...\n\nAll matched files use the correct format.\nFinished in 514ms on 53 files using 24 threads.\n"
+    },
+    {
+      "name": "Version consistency",
+      "exit_code": 0,
+      "output": "Release versions match 2.16.2.\n"
+    },
+    {
+      "name": "Available tooling tests",
+      "exit_code": 0,
+      "output": "✔ version sync changes only release versions and is idempotent (58.3765ms)\n✔ invalid release versions and missing packages fail before writing metadata (131.7131ms)\n✔ a merged same-repository version PR with an increased version can publish (0.6155ms)\n▶ ordinary merges, unmerged PRs, forks and manual runs cannot publish\n  ✔ feature PR (0.1778ms)\n  ✔ unmerged version PR (0.1144ms)\n  ✔ different merge commit (0.081ms)\n  ✔ fork version branch (0.0729ms)\n  ✔ deleted head repository (0.0694ms)\n  ✔ different base (0.1059ms)\n  ✔ manual CI run (0.0874ms)\n  ✔ PR checks (0.0616ms)\n  ✔ other branch (0.0638ms)\n  ✔ force push (0.0608ms)\n  ✔ initial push (0.0524ms)\n✔ ordinary merges, unmerged PRs, forks and manual runs cannot publish (2.0862ms)\n✔ publishing requires a numeric version increase (0.338ms)\n✔ missing PRs and failed GitHub lookups never permit publication (0.1604ms)\n✔ addresses typed without a scheme default to http (0.7402ms)\n✔ the tile list is read without caching and rejected when malformed (1.6697ms)\n✔ changes are posted as JSON with the session token and report the TV’s error (0.5672ms)\n✔ the page loads only its own scripts and uses no inline styles or handlers (6.6841ms)\n✔ the shortcut page uses a flat background like wallpaper uploads (0.8487ms)\n✔ portrait, landscape, panorama and zoom crops stay in bounds at 16:9 (1.6547ms)\n✔ dragging clamps at both edges and handles axes without overflow (0.1724ms)\n✔ upload page needs no name and retains its storage-path success view (5.5059ms)\n✔ storage path resolves to the exact absolute directory and rejects unavailable or unsafe values (1.4638ms)\nℹ tests 26\nℹ suites 0\nℹ pass 26\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 295.7611\n"
+    }
+  ],
+  "not_run": [
+    "Rust type checking and Clippy",
+    "Rust unit tests",
+    "Native rendering smoke suites",
+    "ARM package build",
+    "TV installation and validation",
+    "Release-command integration test (Windows symlink permission and missing pnpm dependencies)"
+  ],
+  "hosted_fork_created": false,
+  "tv_changes_applied": false
+}

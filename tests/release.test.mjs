@@ -50,7 +50,10 @@ test('version sync changes only release versions and is idempotent', async (t) =
   );
   assert.equal(
     after[3],
-    before[3].replaceAll(`com.ecklf.luma_${previous}_arm.ipk`, 'com.ecklf.luma_3.1.0_arm.ipk'),
+    before[3].replaceAll(
+      `com.beaux.lumaconsole_${previous}_arm.ipk`,
+      'com.beaux.lumaconsole_3.1.0_arm.ipk',
+    ),
   );
   assert.deepEqual((await syncVersions(directory, { check: true })).changed, []);
   assert.deepEqual((await syncVersions(directory)).changed, []);
@@ -115,7 +118,7 @@ function gateFixture({ pull = {}, previous = '2.0.3', current = '2.0.4', event =
   const context = {
     eventName: 'push',
     ref: 'refs/heads/main',
-    repo: { owner: 'ecklf', repo: 'lg-luma' },
+    repo: { owner: 'beauxshafferwoodworking-byte', repo: 'luma-console' },
     sha: 'merged-commit',
     payload: { before: 'previous-commit', forced: false, deleted: false },
     ...event,
@@ -123,8 +126,11 @@ function gateFixture({ pull = {}, previous = '2.0.3', current = '2.0.4', event =
   const releasePull = {
     merged_at: '2026-10-23T12:00:00Z',
     merge_commit_sha: context.sha,
-    base: { ref: 'main', repo: { full_name: 'ecklf/lg-luma' } },
-    head: { ref: 'changeset-release/main', repo: { full_name: 'ecklf/lg-luma' } },
+    base: { ref: 'main', repo: { full_name: 'beauxshafferwoodworking-byte/luma-console' } },
+    head: {
+      ref: 'changeset-release/main',
+      repo: { full_name: 'beauxshafferwoodworking-byte/luma-console' },
+    },
     ...pull,
   };
   const reads = [];
@@ -161,7 +167,17 @@ test('a merged same-repository version PR with an increased version can publish'
 
 test('ordinary merges, unmerged PRs, forks and manual runs cannot publish', async (t) => {
   const cases = [
-    ['feature PR', { pull: { head: { ref: 'feature', repo: { full_name: 'ecklf/lg-luma' } } } }],
+    [
+      'feature PR',
+      {
+        pull: {
+          head: {
+            ref: 'feature',
+            repo: { full_name: 'beauxshafferwoodworking-byte/luma-console' },
+          },
+        },
+      },
+    ],
     ['unmerged version PR', { pull: { merged_at: null } }],
     ['different merge commit', { pull: { merge_commit_sha: 'other-commit' } }],
     [
@@ -171,7 +187,14 @@ test('ordinary merges, unmerged PRs, forks and manual runs cannot publish', asyn
     ['deleted head repository', { pull: { head: { ref: 'changeset-release/main', repo: null } } }],
     [
       'different base',
-      { pull: { base: { ref: 'develop', repo: { full_name: 'ecklf/lg-luma' } } } },
+      {
+        pull: {
+          base: {
+            ref: 'develop',
+            repo: { full_name: 'beauxshafferwoodworking-byte/luma-console' },
+          },
+        },
+      },
     ],
     ['manual CI run', { event: { eventName: 'workflow_dispatch' } }],
     ['PR checks', { event: { eventName: 'pull_request' } }],

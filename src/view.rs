@@ -24,6 +24,9 @@ const RECENTS_BACKDROP_OPACITY: f32 = 0.86;
 #[path = "recents-view.rs"]
 mod recents_view;
 
+#[path = "console-view.rs"]
+mod console_view;
+
 pub struct Assets {
     pub root: PathBuf,
     pub version: String,
@@ -518,7 +521,7 @@ pub fn scene_with_pill(
         );
         let alpha = (start.elapsed().as_secs_f32() / state.background_fade).min(1.);
         out.draw.push(Draw::TintedImage(
-            assets.background(state, &state.preferences.background),
+            assets.background(state, state.console_background()),
             Rect::new(0., 0., 1920., 1080.),
             0.,
             false,
@@ -526,13 +529,20 @@ pub fn scene_with_pill(
         ));
     } else {
         out.image(
-            assets.background(state, &state.preferences.background),
+            assets.background(state, state.console_background()),
             Rect::new(0., 0., 1920., 1080.),
             0.,
             false,
         );
     }
     let content_start = out.draw.len();
+    if state.preferences.console.enabled {
+        out.shape(
+            Rect::new(0., 0., 1920., 1080.),
+            0.,
+            c(0, f32::from(state.preferences.console.dim) / 100.),
+        );
+    }
     if recents_replaces_page(state) {
         out.shape(
             Rect::new(0., 0., 1920., 1080.),
@@ -787,6 +797,10 @@ fn tile(
     names: bool,
     pinned: bool,
 ) {
+    if state.page == Page::Home && state.preferences.console.enabled {
+        console_view::tile(out, state, assets, app, rect);
+        return;
+    }
     let caption_height = if names {
         caption_height(state, assets, app, rect.w)
     } else {
@@ -1093,9 +1107,10 @@ fn brand_mark(out: &mut Scene, assets: &Assets, app: &App, rect: Rect, language:
 fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
     let language = state.preferences.language;
     let s = state.scroll;
-    let summary = state
-        .preferences
-        .show_weather
+    if state.preferences.console.enabled {
+        console_view::hero(out, state, assets, now);
+    }
+    let summary = (state.preferences.show_weather && !state.preferences.console.enabled)
         .then(|| weather_summary_layout(state, assets));
     let shift = summary
         .as_ref()
@@ -1106,7 +1121,7 @@ fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
     } else {
         0.
     };
-    if state.preferences.show_date {
+    if state.preferences.show_date && !state.preferences.console.enabled {
         out.text(
             state.preferences.date_format.format(language, now),
             Rect::new(84., top, 1200., 24.),
@@ -1115,7 +1130,7 @@ fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
             false,
         );
     }
-    if state.preferences.show_greeting {
+    if state.preferences.show_greeting && !state.preferences.console.enabled {
         let greeting = language.greeting(now.hour(), &state.preferences.greeting_name);
         let greeting_style = text(90.4, 500, -0.065).leading(1.05);
         let fitted = assets.fit_text(&greeting, greeting_style, 1500.);
@@ -1159,8 +1174,13 @@ fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
         );
     }
     let apps = state.apps();
-    let names = state.preferences.show_home_names;
-    let mut grid_height = FACE_HEIGHT;
+    let names = state.preferences.show_home_names && !state.preferences.console.enabled;
+    let face_height = if state.preferences.console.enabled {
+        HOME_TILE_WIDTH
+    } else {
+        FACE_HEIGHT
+    };
+    let mut grid_height = face_height;
     if state.loading && state.inventory.apps.is_empty() {
         for index in 0..6 {
             out.shape(
@@ -1199,7 +1219,7 @@ fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
         grid_height = 247.5;
     }
     if !apps.is_empty() {
-        grid_height = FACE_HEIGHT
+        grid_height = face_height
             + if names {
                 18.4 + apps
                     .iter()
@@ -1235,7 +1255,7 @@ fn home(out: &mut Scene, state: &State, assets: &Assets, now: OffsetDateTime) {
                 84. + index as f32 * HOME_TILE_PITCH - state.home_scroll,
                 544.8 - s,
                 HOME_TILE_WIDTH,
-                FACE_HEIGHT,
+                face_height,
             ),
             names,
             false,
@@ -2356,6 +2376,7 @@ fn settings_content(out: &mut Scene, state: &State, assets: &Assets) {
     }
     match state.section {
         0 => {
+            console_view::settings(out, state, assets);
             for (position, (index, key, icon, value, chevron)) in [
                 (0, "appNames", "type", None, true),
                 (1, "clock", "clock", None, true),
@@ -3171,6 +3192,11 @@ fn options(out: &mut Scene, state: &State, assets: &Assets, id: &str, anchor: Op
     } else {
         crate::platform::can_uninstall(id)
     };
+    let extra_rows = if !shortcut && !background && state.preferences.console.enabled {
+        2.
+    } else {
+        0.
+    };
     let height = if shortcut {
         176.
     } else if background {
@@ -3179,7 +3205,7 @@ fn options(out: &mut Scene, state: &State, assets: &Assets, id: &str, anchor: Op
         329.6
     } else {
         252.8
-    };
+    } + extra_rows * 76.8;
     let card = anchor.unwrap_or(Rect::new(460., 380., 256., 153.6));
     let x = if card.x + card.w + 32. + 520. <= 1836. {
         card.x + card.w + 32.
@@ -3216,7 +3242,7 @@ fn options(out: &mut Scene, state: &State, assets: &Assets, id: &str, anchor: Op
     ));
     out.border(panel, 27.2, 1., c(0xffffff, 0.12));
     let hidden = state.preferences.hidden.iter().any(|item| item == id);
-    let actions = if shortcut {
+    let mut actions = if shortcut {
         vec![
             (Target::TileTest(id.into()), language.t("testShortcut")),
             (Target::TileRemove(id.into()), language.t("removeTile")),
@@ -3248,6 +3274,11 @@ fn options(out: &mut Scene, state: &State, assets: &Assets, id: &str, anchor: Op
         .take(if deletable { 4 } else { 3 })
         .collect()
     };
+    if extra_rows > 0. {
+        let at = actions.len() - usize::from(deletable);
+        actions.insert(at, (Target::AppBackground, "Assign current background"));
+        actions.insert(at + 1, (Target::ClearAppBackground, "Clear app background"));
+    }
     for (row, (target, label)) in actions.into_iter().enumerate() {
         let rect = Rect::new(
             panel.x + 16.,
@@ -3293,6 +3324,8 @@ fn options(out: &mut Scene, state: &State, assets: &Assets, id: &str, anchor: Op
             match &target {
                 Target::OpenApp | Target::TileTest(_) => "arrow",
                 Target::UseBackground => "check",
+                Target::AppBackground => "check",
+                Target::ClearAppBackground => "circle-minus",
                 Target::Option(0) => {
                     if favorite {
                         "heart-filled"

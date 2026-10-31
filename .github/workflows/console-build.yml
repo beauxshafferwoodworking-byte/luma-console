@@ -1,0 +1,68 @@
+name: Luma Console validation and test package
+
+on:
+  push:
+    branches: [main, console]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@1.93.0
+        with:
+          components: rustfmt, clippy
+          targets: armv7-unknown-linux-gnueabi
+      - uses: Swatinem/rust-cache@v2
+      - name: Install build and rendering dependencies
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+            libsdl2-dev pkg-config woff2 python3-fonttools libgl1-mesa-dri xvfb xauth
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm assets
+      - name: Mocked native rendering suites
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s '-screen 0 1920x1080x24' pnpm test:smoke
+      - run: pnpm sdk
+      - name: Build independent ARM test package
+        run: |
+          export WEBOS_NDK="$GITHUB_WORKSPACE/.build/toolchain/arm-webos-linux-gnueabi_sdk-buildroot"
+          pnpm build
+          node tools/package.mjs
+          node tools/repository.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: luma-console-test-package
+          if-no-files-found: error
+          path: |
+            dist/*.ipk
+            dist/sha256sums
+            dist/repo.json
+            dist/description.html
+            dist/app-icon-large.png
+      - name: Preserve rendering diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-rendering-diagnostics
+          if-no-files-found: ignore
+          include-hidden-files: true
+          path: |
+            .build/*.png
+            .build/*-render.json

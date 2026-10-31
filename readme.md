@@ -1,4 +1,16 @@
-# Luma
+# Luma Console
+
+Draft native customization fork of [Luma](https://github.com/ecklf/lg-luma),
+based on upstream 2.16.2. See [Console setup and validation](docs/console.md)
+for the custom controls, build status, and separate test installation.
+
+Enable **Settings → Interface → Console layout** for console-style Home tiles,
+a compact weather card, accent colors, corner styles, background dimming, and
+per-app backgrounds. The inherited classic layout remains available.
+
+The fork uses app ID `com.beaux.lumaconsole` and the title **Luma Console**.
+Native compilation and TV validation are pending. Installation does not enable
+Home takeover. The workflow only creates test artifacts; it does not publish releases.
 
 A native launcher for rooted LG webOS TVs, inspired by Apple TV.
 
@@ -112,7 +124,7 @@ https://github.com/user-attachments/assets/3d3564d9-5942-4aef-a726-0323f5e86a07
 ### Homebrew Channel
 
 ```text
-https://github.com/ecklf/lg-luma/releases/latest/download/repo.json
+https://github.com/beauxshafferwoodworking-byte/luma-console/releases/latest/download/repo.json
 ```
 
 ### SSH
@@ -120,7 +132,7 @@ https://github.com/ecklf/lg-luma/releases/latest/download/repo.json
 On your computer, replace `TV_IP`:
 
 ```sh
-scp -O dist/com.ecklf.luma_2.16.2_arm.ipk root@TV_IP:/tmp/luma.ipk
+scp -O dist/com.beaux.lumaconsole_2.16.2_arm.ipk root@TV_IP:/tmp/luma.ipk
 ssh root@TV_IP
 ```
 
@@ -128,7 +140,7 @@ In the TV's root shell:
 
 ```sh
 luna-send -i luna://com.webos.appInstallService/dev/install \
-  '{"id":"com.ecklf.luma","ipkUrl":"/tmp/luma.ipk","subscribe":true}'
+  '{"id":"com.beaux.lumaconsole","ipkUrl":"/tmp/luma.ipk","subscribe":true}'
 ```
 
 ## Replacing LG Home
@@ -149,27 +161,27 @@ other Home replacement, then run in the TV's root SSH shell:
 If you enabled Lumas autostart method earlier, disable it first:
 
 ```sh
-APP=/media/developer/apps/usr/palm/applications/com.ecklf.luma
+APP=/media/developer/apps/usr/palm/applications/com.beaux.lumaconsole
 sh "$APP/autostart.sh" disable
 ```
 
 To enable the takeover run:
 
 ```sh
-APP=/media/developer/apps/usr/palm/applications/com.ecklf.luma
+APP=/media/developer/apps/usr/palm/applications/com.beaux.lumaconsole
 sh "$APP/home.sh" enable
 ```
 
 To see the status or disable the home override use:
 
 ```sh
-sh /var/lib/luma-home/home.sh status
-sh /var/lib/luma-home/home.sh disable
+sh /var/lib/luma-console-home/home.sh status
+sh /var/lib/luma-console-home/home.sh disable
 ```
 
 `restore` is an alias for `disable`.
 
-Boot log: `/var/lib/luma-home/boot.log`. See the
+Boot log: `/var/lib/luma-console-home/boot.log`. See the
 [development guide](development.md#optional-native-home-integration) for implementation details.
 
 <details>
@@ -200,7 +212,7 @@ LG Home's original files remain underneath, using the same approach as
 Open Luma 25 seconds after a full cold boot. Run in the TV's root SSH shell:
 
 ```sh
-sh /media/developer/apps/usr/palm/applications/com.ecklf.luma/autostart.sh enable
+sh /media/developer/apps/usr/palm/applications/com.beaux.lumaconsole/autostart.sh enable
 ```
 
 Use this when takeover is disabled. It launches Luma as a regular app and does not remap the Home button.
@@ -208,7 +220,7 @@ Use this when takeover is disabled. It launches Luma as a regular app and does n
 Disable before enabling takeover or uninstalling Luma:
 
 ```sh
-sh /media/developer/apps/usr/palm/applications/com.ecklf.luma/autostart.sh disable
+sh /media/developer/apps/usr/palm/applications/com.beaux.lumaconsole/autostart.sh disable
 ```
 
 ### LG Input Hook Method
@@ -216,7 +228,7 @@ sh /media/developer/apps/usr/palm/applications/com.ecklf.luma/autostart.sh disab
 You can use [LG Input Hook](https://repo.webosbrew.org/apps/org.webosbrew.inputhook/), configure an Execute action with this one-line command:
 
 ```sh
-/usr/bin/luna-send -n 1 -w 5000 luna://com.webos.service.applicationmanager/launch '{"id":"com.ecklf.luma"}'
+/usr/bin/luna-send -n 1 -w 5000 luna://com.webos.service.applicationmanager/launch '{"id":"com.beaux.lumaconsole"}'
 ```
 
 Test on a spare button first. Disable the mapping in Input Hook to restore normal Home behavior.
@@ -276,7 +288,7 @@ checksum-pinned SDL-webOS library; both downloads are cached under `.build/`.
 Output:
 
 ```text
-dist/com.ecklf.luma_2.16.2_arm.ipk
+dist/com.beaux.lumaconsole_2.16.2_arm.ipk
 dist/sha256sums
 dist/repo.json
 dist/app-icon-large.png
@@ -286,7 +298,7 @@ Open [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop), conn
 IP on port **22** as **root**, and install the IPK. Open **Luma** from the TV menu. Homebrew
 Channel must be elevated; on webOS 26 use **0.8.0-rc1 or newer** for its `lunabus.query` mapping.
 
-The native package uses **`com.ecklf.luma`** and installs separately from the old
+The native package uses **`com.beaux.lumaconsole`** and installs separately from the old
 `com.luma.launcher` web app and the former `com.luma.launcher.native` / `com.luma.native` prototypes. Native preferences
 are local JSON files and are separate for each installation; browser preferences are not migrated.
 Homebrew Channel treats this ID as a separate app rather than an update to the old launcher.

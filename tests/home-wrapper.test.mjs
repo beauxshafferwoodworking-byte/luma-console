@@ -10,13 +10,13 @@ const source = await fs.readFile(new URL('../tv/home.sh', import.meta.url), 'utf
 // tv/home.sh in a temporary root: the copied state directory with a recording luma-helper,
 // the cold-boot hook as a real symlink, and stubs for the root-only id/stat checks.
 async function fixture({ helper = true, relative = false } = {}) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'luma-home-wrapper-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'luma-console-home-wrapper-'));
   const state = path.join(root, 'state');
   const bin = path.join(root, 'bin');
   const hooks = path.join(root, 'init.d');
   const calls = path.join(root, 'calls');
   await Promise.all([state, bin, hooks].map((dir) => fs.mkdir(dir)));
-  const line = 'STATE=/var/lib/luma-home\n';
+  const line = 'STATE=/var/lib/luma-console-home\n';
   assert.ok(source.includes(line));
   await fs.writeFile(path.join(state, 'home.sh'), source.replace(line, `STATE='${state}'\n`), {
     mode: 0o755,
@@ -35,7 +35,7 @@ async function fixture({ helper = true, relative = false } = {}) {
   ]) {
     await fs.writeFile(path.join(bin, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
   }
-  const hook = path.join(hooks, '64-luma-home');
+  const hook = path.join(hooks, '65-luma-console-home');
   await fs.symlink(relative ? '../state/home.sh' : path.join(state, 'home.sh'), hook);
   const run = (...args) =>
     spawnSync('/bin/sh', [hook, ...args], {

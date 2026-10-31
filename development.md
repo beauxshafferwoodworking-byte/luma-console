@@ -1,5 +1,9 @@
 # Luma development
 
+This fork adds native Console appearance preferences and a child view module.
+See [Console development and validation](docs/console.md). Upstream development
+instructions below still apply; the fork uses `com.beaux.lumaconsole`.
+
 ## Layout
 
 ```text
@@ -18,7 +22,7 @@ dist/                        Generated ARM IPK, checksum and Homebrew feed
 
 The launcher is rendered natively, without React, JSX, Vite or a browser runtime. Node/pnpm
 remain build/deployment tools for Sharp, the webOS CLI and formatting/linting. The installed app
-is the Rust executable `luma`, with app ID `com.ecklf.luma`. The companion pages in
+is the Rust executable `luma`, with app ID `com.beaux.lumaconsole`. The companion pages in
 `assets/wallpaper-upload/` and `assets/tile-editor/` are plain HTML/CSS/JavaScript, embedded in the
 native executable and served temporarily to the owner's phone or computer; they do not render the
 TV interface.
@@ -519,7 +523,7 @@ them even if they remain in an old cache. Source photographic detail still limit
 
 Manual testing on 2026-10-23 used an **LG OLED55C57LA (C5), webOS 26, chip `O22A3`, driver
 `lg1kdrm`**. A contributor reported similar corruption on a C3 in
-[#25](https://github.com/ecklf/lg-luma/issues/25). Usable native 4K UI presentation has not been
+[#25](https://github.com/beauxshafferwoodworking-byte/luma-console/issues/25). Usable native 4K UI presentation has not been
 established on these tested TVs.
 
 The C5's default EGLFS JSON reported `1920x1080`, and the active DRM state independently confirmed
@@ -625,10 +629,10 @@ the original process arguments available to SDL/libhelpers. To expose the actual
 sandbox's stdout/stderr, close Luma and run in the TV's root SSH shell:
 
 ```sh
-APP=/media/developer/apps/usr/palm/applications/com.ecklf.luma
+APP=/media/developer/apps/usr/palm/applications/com.beaux.lumaconsole
 XDG_RUNTIME_DIR=/tmp/xdg RUST_BACKTRACE=1 /usr/bin/jailer \
-  -t native_devmode -i com.ecklf.luma -p "$APP" \
-  "$APP/luma" '{"@system_native_app":true,"nid":"com.ecklf.luma"}'
+  -t native_devmode -i com.beaux.lumaconsole -p "$APP" \
+  "$APP/luma" '{"@system_native_app":true,"nid":"com.beaux.lumaconsole"}'
 ```
 
 Startup prints accepted launch parameters, SDL driver, actual sample count, cumulative stage
@@ -652,7 +656,7 @@ failures preserve the last valid inputs. No failed inventory read substitutes de
 
 `tv/home.sh` and the native Rust `luma-helper` executable are packaged beside `luma`. They are a root-only, explicit integration
 for webOS 10/25 and 11/26 (and webOS 5/6, see below). `enable` stages a native manifest with ID `com.webos.app.home` and
-symlinks to the installed executable, libraries and assets under `/var/lib/luma-home/app`, then
+symlinks to the installed executable, libraries and assets under `/var/lib/luma-console-home/app`, then
 bind-mounts it over `/usr/palm/applications/com.webos.app.home`. SAM rereads that one app through
 `blockSystemApp` followed by `releaseBlockSystemApp`, including `forceBlockSystemApp: false` when
 the TV schema requires it. The script verifies the reported manifest before stopping the previous
@@ -677,11 +681,11 @@ executable itself stays at its installed path for LS2 authentication, `$ORIGIN/l
 and preference selection. Opening Luma's normal tile while the Home mount is active redirects to
 the Home instance. The scripts do not create a browser wrapper or change the package's app ID.
 
-`64-luma-home` reapplies the mount from a detached boot hook. The existing TV Home Auto Launch
+`65-luma-console-home` reapplies the mount from a detached boot hook. The existing TV Home Auto Launch
 and Quick Start+ settings determine whether power-on opens Home. Until the hook applies, LG Home
 can still appear. This integration does not change those settings or install a remote-key filter.
 `disable` (also `restore`) removes the mount, refreshes LG's manifest, stops the native Home
-instance and removes the boot hook. The copied restore scripts remain in `/var/lib/luma-home`
+instance and removes the boot hook. The copied restore scripts remain in `/var/lib/luma-console-home`
 even if the installed package is removed. Disable the standalone `65-luma` cold-boot hook before
 enabling this integration.
 
@@ -715,7 +719,7 @@ is bound to that executable path. Luma detects this (`platform::runs_as_lg_home`
   discovery validates the package manifest and matches the executable by device/inode, so assets
   and splash updates use the source package even when developer and production copies both exist.
   A missing or unrelated source package is an explicit startup error;
-- writes its stderr to `/tmp/luma-home.log`, because SAM discards a system app's output;
+- writes its stderr to `/tmp/luma-console-home.log`, because SAM discards a system app's output;
 - skips the per-icon elevated-service fallback for installed artwork: as root every file is
   readable, so that fallback would only spend seconds per icon to fail the same way.
 
@@ -728,7 +732,7 @@ after 6 s, because SAM can accept the first launch right after the old process s
 starting anything; otherwise the mount is removed again. A mount whose source is Luma's executable
 counts as its own also after a package update (`//deleted`) and is replaced; any other mount over
 LG's executable is refused. `disable` unmounts (lazily while Home runs), stops Luma and reopens LG
-Home if Home was in front. While mounted, `/var/run/luma-home` names Luma, so a normal
+Home if Home was in front. While mounted, `/var/run/luma-console-home` names Luma, so a normal
 tile launch redirects to the Home instance: the tile's jail sees `/usr/bin` without the mount but
 shares `/var/run`, which is volatile like the mount itself. LG's file stays underneath, and a cold boot
 without the hook gives LG's Home back. Verified on an LG 49UN7100
@@ -741,7 +745,7 @@ never as a registered app: on every Home key it kills Luma and starts it again. 
 of LG's executable is not an option here, because LG Home's role
 (`/usr/share/luna-service2/roles.d/com.webos.app.home.app.json`) is app-ID based
 (`"appId": "com.webos.app.home"`, names `com.webos.app.home-*`), not bound to a path, and Luma's
-role only allows `com.ecklf.luma` or an anonymous name.
+role only allows `com.beaux.lumaconsole` or an anonymous name.
 
 The staged Home runs as root, and as root the system-bus `luna-send -a` may act for an app ID.
 So when `options.webos_home` is set outside LG's executable path and the effective user is root,
@@ -765,12 +769,12 @@ handling as v2.
   3 s for `FocusGained` or a remote key, which only reach the focused surface. `Shown` and
   `Restored` do not count, because `SDL_ShowWindow` emits `Shown` itself whether or not the raise
   reached the screen. Without confirmation, Luma assumes it cannot bring itself forward on this
-  firmware: it creates `/var/lib/luma-home/no-lifecycle` and ends the registration, which quits
+  firmware: it creates `/var/lib/luma-console-home/no-lifecycle` and ends the registration, which quits
   it, so SAM starts Home afresh. While that file exists, Luma does not register and Home behaves
   as before. Delete it to try again.
 - A setup error after the child started (e.g. a thread cannot be created) kills and reaps the
   child before returning the error, so no registration is left behind while Luma keeps running.
-- stderr goes to `/tmp/luma-home.log` in this mode too. Replies are logged as
+- stderr goes to `/tmp/luma-console-home.log` in this mode too. Replies are logged as
   `Luma lifecycle: …`, the helper's end as `Luma app subscription ended (was registered: …)`,
   and window visibility and focus changes as `Luma window: …`.
 - `app_subscription` has no LS2 dependency, so its host tests run it against fake `luna-send`
@@ -818,7 +822,7 @@ method uses its source installation for storage precedence and legacy migration,
 valid weather cache from beside this installation's old executable are imported once, without
 overwriting the chosen destination. Invalid existing preferences still report an error.
 Startup prints `Luma persistent storage:` with the chosen path. Desktop preview retains the legacy
-`$XDG_CONFIG_HOME/luma-native/preferences.json` path, or `~/.config/luma-native/preferences.json`,
+`$XDG_CONFIG_HOME/luma-console/preferences.json` path, or `~/.config/luma-console/preferences.json`,
 so existing preview choices survive flattening. `--preferences PATH` isolates a manual run.
 Invalid preference files report an error rather than being overwritten. Writes use atomic
 temporary-file renames; use one instance per preferences file. Browser local storage is not
@@ -842,9 +846,9 @@ runtime font/translation services or telemetry are used. Weather attribution: Op
 ## Update availability
 
 On interactive desktop or TV startup a separate worker checks
-`https://github.com/ecklf/lg-luma/releases/latest/download/repo.json` once per process automatically.
+`https://github.com/beauxshafferwoodworking-byte/luma-console/releases/latest/download/repo.json` once per process automatically.
 **Settings → System → Check again** retries on the same worker, with one request in flight at a time.
-It only reads the `com.ecklf.luma` package/manifest version and compares numeric major/minor/patch
+It only reads the `com.beaux.lumaconsole` package/manifest version and compares numeric major/minor/patch
 components with the compiled version. Equal, older, malformed or prerelease versions do not offer
 updates. HTTP is HTTPS-only with bounded redirects, a ten-second timeout, a 256 KiB reply limit and
 no proxy; failures are logged without interrupting launch and the status card offers retry.
@@ -862,7 +866,7 @@ exec service's shell, so systemd cannot expand the embedded script before `/bin/
 The installer locks, stages and re-verifies a root-owned copy, waits for installation completion and
 checks the installed version before reopening Luma. Home takeover refreshes from the new package;
 failed reapplication attempts verified LG Home recovery. Atomic attempt-specific results and a log
-persist in `/var/lib/luma-update`. The card displays progress, ignores repeated presses while busy,
+persist in `/var/lib/luma-console-update`. The card displays progress, ignores repeated presses while busy,
 and returns to **Check again** after failure. On restart the installer worker observes an unfinished
 attempt or reports its persisted failure. Desktop and scripted/simulated runs cannot install.
 
@@ -939,7 +943,7 @@ or rerun a workflow to rebuild the same commit.
 Only the build job checks out PR code. It has read-only repository access, no persisted
 checkout credentials and no shared build caches. A separate job with comment-writing permission
 uses the trusted base-branch workflow and GitHub's artifact API without checking out PR code.
-The package keeps the normal `com.ecklf.luma` identity and version, so installing it replaces
+The package keeps the normal `com.beaux.lumaconsole` identity and version, so installing it replaces
 the existing Luma app. These builds are for manual TV verification; the ordinary CI checks still
 run independently.
 
@@ -1022,8 +1026,8 @@ If diagnostics on the affected TV establish that Home opens `com.webos.app.fullh
 existing takeover first, then explicitly select that target:
 
 ```sh
-sh /var/lib/luma-home/home.sh disable
-sh /media/developer/apps/usr/palm/applications/com.ecklf.luma/home.sh enable /media/developer/apps/usr/palm/applications/com.ecklf.luma com.webos.app.fullhome
+sh /var/lib/luma-console-home/home.sh disable
+sh /media/developer/apps/usr/palm/applications/com.beaux.lumaconsole/home.sh enable /media/developer/apps/usr/palm/applications/com.beaux.lumaconsole com.webos.app.fullhome
 ```
 
 Use the installed package directory on production installations. The selected target is saved
@@ -1045,7 +1049,7 @@ root-side LS2 operations; Node is no longer required by these helpers or by `tv/
 which reads its two JSON fields with POSIX tools.
 
 `home.sh` retains its explicit confirmation and filesystem lock. Enabling Home copies both that
-script and the native helper into `/var/lib/luma-home`, so recovery remains available after the
+script and the native helper into `/var/lib/luma-console-home`, so recovery remains available after the
 source package is removed. When upgrading an existing integration from the interpreter helper,
 run the packaged `home.sh enable` again to replace its copied recovery/boot files. Configurations
 from the former scripts keep their method, installation and original stock manifest. Both `home`

@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fs, path::Path};
 
-const STATE: &str = "/var/lib/luma-home";
-const CONFIG: &str = "/var/lib/luma-home/state.json";
-const STAGE: &str = "/var/lib/luma-home/app";
-const HOOK: &str = "/var/lib/webosbrew/init.d/64-luma-home";
-const MARKER: &str = "/var/run/luma-home";
+const STATE: &str = "/var/lib/luma-console-home";
+const CONFIG: &str = "/var/lib/luma-console-home/state.json";
+const STAGE: &str = "/var/lib/luma-console-home/app";
+const HOOK: &str = "/var/lib/webosbrew/init.d/65-luma-console-home";
+const MARKER: &str = "/var/run/luma-console-home";
 pub const HOME: &str = "com.webos.app.home";
 pub const FULL_HOME: &str = "com.webos.app.fullhome";
 fn default_home() -> String {
@@ -410,6 +410,12 @@ impl<'a, S: System> Home<'a, S> {
         Ok(())
     }
     pub fn install(&self, app: &Path) -> Result<()> {
+        if self.exists("/var/lib/webosbrew/init.d/64-luma-home")
+            || self.exists("/var/run/luma-home")
+            || self.exists("/var/lib/webosbrew/init.d/65-luma")
+        {
+            return Err("Stock Luma Home integration is active. Test Luma Console as a normal app, then explicitly disable stock takeover before enabling Console takeover.".into());
+        }
         let physical = fs::canonicalize(self.system.path(app)).map_err(|e| e.to_string())?;
         let base = self.system.path(Path::new("/"));
         let app = if base == Path::new("/") {
@@ -448,9 +454,9 @@ impl<'a, S: System> Home<'a, S> {
         }
         self.owned_mount()?;
         if self.exists(HOOK) && !hook_owned(self.system) {
-            return Err("64-luma-home is already in use".into());
+            return Err("65-luma-console-home is already in use".into());
         }
-        if self.exists("/var/lib/webosbrew/init.d/65-luma") {
+        if self.exists("/var/lib/webosbrew/init.d/66-luma-console") {
             return Err(
                 "Disable the standalone cold-boot hook with autostart.sh disable first".into(),
             );
@@ -501,7 +507,7 @@ impl<'a, S: System> Home<'a, S> {
             system::write_json(self.system, format!("{STAGE}/appinfo.json"), &manifest)?;
             system::write(
                 self.system,
-                format!("{STAGE}/.luma-home"),
+                format!("{STAGE}/.luma-console-home"),
                 format!("{APP}\n").as_bytes(),
                 0o644,
             )?;
@@ -535,7 +541,7 @@ fn unescape(s: &str) -> String {
 pub fn exe_owned(root: &str) -> bool {
     root.strip_suffix("//deleted")
         .unwrap_or(root)
-        .ends_with("/com.ecklf.luma/luma")
+        .ends_with("/com.beaux.lumaconsole/luma")
 }
 pub fn home_process(
     args: &[String],
@@ -580,7 +586,7 @@ pub fn method<'a>(release: &str, stock: &Value, id: &str) -> Result<&'a str> {
 }
 pub fn hook_owned(system: &impl System) -> bool {
     fs::read_link(system.path(Path::new(HOOK)))
-        .is_ok_and(|p| p == system.path(Path::new("/var/lib/luma-home/home.sh")))
+        .is_ok_and(|p| p == system.path(Path::new("/var/lib/luma-console-home/home.sh")))
 }
 pub fn load(system: &impl System) -> Result<Option<Config>> {
     if !system::exists(system, CONFIG) {

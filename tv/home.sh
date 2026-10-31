@@ -1,6 +1,6 @@
 #!/bin/sh
 # Optional native Home replacement. The webosbrew hook has no .sh suffix.
-STATE=/var/lib/luma-home
+STATE=/var/lib/luma-console-home
 # The cold-boot hook is a symlink to the copied $STATE/home.sh: find luma-helper beside its target.
 SCRIPT=$0
 if [ -L "$SCRIPT" ]; then
@@ -25,7 +25,7 @@ if [ "$COMMAND" = enable ] && grep -q 'release [56]\.' /etc/starfish-release 2>/
     "  3. Bind-mount Luma's executable over the selected LG Home executable." \
     "     LG's Home manifest and role stay; Luma registers with SAM itself." \
     '  4. Stop the previous Home process and launch Luma as Home.' \
-    '  5. Install /var/lib/webosbrew/init.d/64-luma-home to reapply the mount at cold boot.' \
+    '  5. Install /var/lib/webosbrew/init.d/65-luma-console-home to reapply the mount at cold boot.' \
     '' \
     "LG Home's original executable remains underneath the mount." \
     'Home Auto Launch and Quick Start+ retain their current settings.' \
@@ -39,7 +39,7 @@ elif [ "$COMMAND" = enable ]; then
     "  3. Bind-mount $STATE/app over /usr/palm/applications/com.webos.app.home." \
     '  4. Temporarily block and release Home so SAM rereads its manifest.' \
     '  5. Stop the previous Home process and launch Luma as Home.' \
-    '  6. Install /var/lib/webosbrew/init.d/64-luma-home to reapply the mount at cold boot.' \
+    '  6. Install /var/lib/webosbrew/init.d/65-luma-console-home to reapply the mount at cold boot.' \
     '' \
     "LG Home's original files remain underneath the mount." \
     'Home Auto Launch and Quick Start+ retain their current settings.' \

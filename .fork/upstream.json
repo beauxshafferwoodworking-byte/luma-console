@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/ecklf/lg-luma",
+  "commit": "e5608cd053be5376a54a806129a332952dfabcef",
+  "version": "2.16.2",
+  "license": "MIT",
+  "fork_repository": "beauxshafferwoodworking-byte/luma-console",
+  "status": "Draft source; native compilation and TV validation pending"
+}

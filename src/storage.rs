@@ -15,7 +15,7 @@ pub fn default_path(webos: bool) -> Result<PathBuf, String> {
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|p| PathBuf::from(p).join(".config")))
         .ok_or("Set HOME, XDG_CONFIG_HOME or --preferences for native preferences")?;
-    Ok(base.join("luma-native/preferences.json"))
+    Ok(base.join("luma-console/preferences.json"))
 }
 
 #[cfg(all(feature = "webos", unix))]
