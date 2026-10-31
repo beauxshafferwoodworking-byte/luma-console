@@ -1897,6 +1897,10 @@ fn run() -> Result<(), String> {
             "update_status": state.update_status, "available_update": state.available_update,
             "error": state.error, "scroll": state.scroll, "home_scroll": state.home_scroll, "subpage": state.subpage, "modal": state.overlay.is_some(), "weather": state.weather,
             "inventory": state.inventory.apps,
+            "displayed_background": state.console_background(),
+            "controls": scene.controls.iter().map(|control| serde_json::json!({
+                "target": control.target, "rect": [control.rect.x, control.rect.y, control.rect.w, control.rect.h]
+            })).collect::<Vec<_>>(),
             "recents": state.recents.entries, "recents_pending": state.recents.pending, "recents_error": state.recents.error, "recents_visibility": state.recents.visibility,
             "ui_text": scene.draw.iter().filter_map(|draw| match draw { renderer::Draw::Text(value, ..) => Some(value), _ => None }).collect::<Vec<_>>() });
         std::fs::write(
