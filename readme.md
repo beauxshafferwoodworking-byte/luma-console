@@ -9,8 +9,11 @@ a compact weather card, accent colors, corner styles, background dimming, and
 per-app backgrounds. The inherited classic layout remains available.
 
 The fork uses app ID `com.beaux.lumaconsole` and the title **Luma Console**.
-Native compilation and TV validation are pending. Installation does not enable
-Home takeover. The workflow only creates test artifacts; it does not publish releases.
+Native compilation, automated rendering checks, and the ARM package build passed.
+See [the tested build](https://github.com/beauxshafferwoodworking-byte/luma-console/actions/runs/41235876871)
+and [validation details](docs/console-validation.md). TV validation is pending.
+Installation does not enable Home takeover. The workflow only creates test artifacts;
+it does not publish releases.
 
 A native launcher for rooted LG webOS TVs, inspired by Apple TV.
 

@@ -49,9 +49,10 @@ data still need service-specific support.
 
 ## Validation and package
 
-Local Rust parsing and formatting can run with rustfmt 1.93.0. Full Rust type
-checking, Clippy, native tests, native rendering, and ARM compilation are pending
-until a Linux build runner is available. A formatter pass is not a compiled build.
+Formatting, Rust type checking, Clippy, native unit tests, mocked native rendering,
+and ARM compilation passed on the Linux runner. See [validation details](console-validation.md)
+for the exact tested commit and package download. Manual screenshot review and TV
+validation are still pending; desktop checks do not establish TV behavior.
 
 The Console workflow runs formatting, lint, unit tests, mocked rendering suites,
 and the ARM build. It stores `luma-console-test-package` as a workflow artifact.
@@ -59,9 +60,8 @@ It has read-only repository permission and no publishing or TV deployment step.
 Upstream release workflows are preserved under `.fork/upstream-workflows` and
 are outside the Actions workflow directory.
 
-Use the toolchain documented in development.md on Linux, or create the hosted
-fork, push these source changes, and run the Console workflow. Verify all checks
-before treating an IPK as installable.
+Use the toolchain documented in development.md on Linux, or use the hosted fork's
+Console workflow. The successful run's test artifact contains the compiled IPK.
 
 The package is `com.beaux.lumaconsole_2.16.2_arm.ipk`. Its version is inherited
 from the source base; a Changeset records the requested next release increment.
